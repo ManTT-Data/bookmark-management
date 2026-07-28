@@ -1,0 +1,28 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+bookmark_service
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test and coverage artifacts
+coverage.tmp
+coverage.out
+coverage.html
+*.coverprofile
+
+# Generated AI context
+repomix-output.xml
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

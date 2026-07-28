@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+coverage.tmp
+coverage.out
+coverage.html
+repomix-output.xml
+bookmark_service
+*.exe
+.vscode
+.idea
