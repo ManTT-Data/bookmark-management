@@ -16,10 +16,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
+      - name: run test
+        run: make docker-test
 
-      - name: Run tests
-        run: go test ./...
+      - name: build image
+        run: make docker-build
+
+      - name: login to docker
+        if: ${{ github.event_name != 'pull_request' }}
+        run: make docker-login
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: push image
+        if: ${{ github.event_name != 'pull_request' }}
+        run: make docker-release
