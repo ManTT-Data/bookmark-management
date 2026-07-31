@@ -27,6 +27,35 @@ definitions:
       service_name:
         type: string
     type: object
+  model.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+  response.Message:
+    properties:
+      details: {}
+      message:
+        type: string
+    type: object
+  user.registerInput:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
 info:
   contact: {}
   description: API documentation for bookmark service.
@@ -87,4 +116,34 @@ paths:
       summary: Generate shorten url based on original url that last upto 7 days
       tags:
       - link
+  /v1/users/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with username, email, and password
+      parameters:
+      - description: User registration info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/user.registerInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User successfully registered
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Invalid input parameters
+          schema:
+            $ref: '#/definitions/response.Message'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Message'
+      summary: Register a new user account
+      tags:
+      - user
 swagger: "2.0"
