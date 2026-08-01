@@ -1,9 +1,11 @@
 package user
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/ManTT-Data/bookmark-management/internal/app/service/user"
+	"github.com/ManTT-Data/bookmark-management/pkg/dbutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -41,11 +43,20 @@ func (h *userHandler) Register(ctx *gin.Context) {
 	}
 
 	createdUser, err := h.userService.CreateUser(ctx, param)
-	if err != nil {
+
+	switch {
+	case err == nil:
+		ctx.JSON(http.StatusOK, createdUser)
+	case errors.Is(err, dbutils.ErrDuplicateEmail):
+		ctx.JSON(http.StatusBadRequest, response.Message{
+			Message: "Email already exists",
+		})
+	case errors.Is(err, dbutils.ErrDuplicateUserName):
+		ctx.JSON(http.StatusBadRequest, response.Message{
+			Message: "Username already exists",
+		})
+	default:
 		log.Error().Err(err).Msg("Failed to create user")
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, response.InternalErrResponse)
-		return
 	}
-
-	ctx.JSON(http.StatusOK, createdUser)
 }
