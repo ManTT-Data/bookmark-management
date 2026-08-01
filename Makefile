@@ -3,7 +3,7 @@ GIT_TAG := $(shell git describe --tags --exact-match --abbrev=0 2>/dev/null)
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 IMG_TAG := latest
 
-IMG_NAME=ebvn/test_k04
+IMG_NAME=traman26/teaman-bookmark
 
 ifneq ($(GIT_TAG),)
 	IMG_TAG := $(GIT_TAG)
