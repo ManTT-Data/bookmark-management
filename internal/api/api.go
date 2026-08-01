@@ -8,11 +8,15 @@ import (
 	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 
 	"github.com/ManTT-Data/bookmark-management/docs"
 	"github.com/ManTT-Data/bookmark-management/internal/app/handler"
+	userHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/user"
 	"github.com/ManTT-Data/bookmark-management/internal/app/repository"
+	userRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/user"
 	"github.com/ManTT-Data/bookmark-management/internal/app/service"
+	userService "github.com/ManTT-Data/bookmark-management/internal/app/service/user"
 	"github.com/ManTT-Data/bookmark-management/pkg/utils"
 )
 
@@ -27,14 +31,16 @@ type api struct {
 	app   *gin.Engine
 	cfg   *Config
 	redis *redis.Client
+	db    *gorm.DB
 }
 
 // New creates a new API Engine instance
-func New(app *gin.Engine, cfg *Config, redis *redis.Client) Engine {
+func New(app *gin.Engine, cfg *Config, redis *redis.Client, db *gorm.DB) Engine {
 	a := &api{
 		app:   app,
 		cfg:   cfg,
 		redis: redis,
+		db:    db,
 	}
 	a.initRoutes()
 	return a
@@ -54,6 +60,7 @@ func (a *api) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 type handlers struct {
 	healthCheckHandler handler.HealthCheck
 	linkHandler        handler.ShortenURL
+	userHandler        userHandler.UserHandler
 }
 
 // initHandlers initializes the api handlers
@@ -63,9 +70,15 @@ func (a *api) initHandlers() *handlers {
 	keyGenerator := utils.NewKeyGenerator()
 	shortenUrlService := service.NewShortenUrl(urlStorageRepo, keyGenerator)
 
+	//user
+	userRepo := userRepo.NewRepository(a.db)
+	hasher := utils.NewHasher()
+	userService := userService.NewService(userRepo, hasher)
+
 	return &handlers{
 		healthCheckHandler: handler.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, pingRepo),
 		linkHandler:        handler.NewShortenURL(shortenUrlService),
+		userHandler:        userHandler.NewUserHandler(userService),
 	}
 }
 
@@ -85,5 +98,8 @@ func (a *api) initRoutes() {
 		// link-related
 		v1Routes.POST("/links/shorten", allHandlers.linkHandler.ShortenLink)
 		v1Routes.GET("/links/redirect/:code", allHandlers.linkHandler.Redirect)
+
+		// user
+		v1Routes.POST("/users/register", allHandlers.userHandler.Register)
 	}
 }

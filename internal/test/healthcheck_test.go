@@ -13,6 +13,7 @@ import (
 
 	"github.com/ManTT-Data/bookmark-management/internal/api"
 	redisPkg "github.com/ManTT-Data/bookmark-management/pkg/redis"
+	"github.com/ManTT-Data/bookmark-management/pkg/sqldb"
 )
 
 var testErr = errors.New("test error")
@@ -79,9 +80,10 @@ func TestHealthCheckEndpoint(t *testing.T) {
 
 			// generate test redis
 			mockRedis := tc.setupRedis(ctx)
+			mockDB := sqldb.InitMockDB(t)
 
 			// Initialize the Gin router
-			testRouter := api.New(gin.New(), cfg, mockRedis)
+			testRouter := api.New(gin.New(), cfg, mockRedis, mockDB)
 			recorder := tc.setupTestHTTP(testRouter)
 			assert.Equal(t, tc.expectedStatusCode, recorder.Code)
 			assert.JSONEq(t, tc.expectedResponseBody, recorder.Body.String())
