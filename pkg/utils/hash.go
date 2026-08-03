@@ -6,6 +6,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//go:generate mockery --name Hasher --filename hash.go --output mocks --outpkg mocks
+// Hasher defines password hashing operations.
 type Hasher interface {
 	Hash(password string) (string, error)
 	Compare(hash, password string) bool

@@ -7,6 +7,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+//go:generate mockery --name JWTGenerator --filename generator.go --output mocks --outpkg mocks
+// JWTGenerator defines token generation operations.
 type JWTGenerator interface {
 	GenerateToken(jwtContent jwt.MapClaims) (string, error)
 }

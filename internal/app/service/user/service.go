@@ -9,6 +9,8 @@ import (
 	"github.com/ManTT-Data/bookmark-management/pkg/utils"
 )
 
+//go:generate mockery --name Service --filename user.go --output ../mocks --outpkg mocks
+// Service defines user business operations.
 type Service interface {
 	CreateUser(ctx context.Context, param *CreateUserParam) (*model.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
