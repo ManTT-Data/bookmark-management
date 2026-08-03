@@ -1,8 +1,9 @@
-package handler
+package url
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/ManTT-Data/bookmark-management/internal/app/service/mocks"
 )
+
+var testErr = errors.New("test error")
 
 func TestShortenURL_ShortenLink(t *testing.T) {
 	t.Parallel()

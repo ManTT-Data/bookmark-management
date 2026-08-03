@@ -6,6 +6,7 @@ import (
 
 	"github.com/ManTT-Data/bookmark-management/internal/app/service/user"
 	"github.com/ManTT-Data/bookmark-management/pkg/dbutils"
+	"github.com/ManTT-Data/bookmark-management/pkg/requestutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -29,10 +30,8 @@ type registerInput struct {
 // @Failure      500 {object} response.Message "Internal server error"
 // @Router       /v1/users/register [post]
 func (h *userHandler) Register(ctx *gin.Context) {
-	input := &registerInput{}
-
-	if err := ctx.ShouldBindJSON(input); err != nil {
-		ctx.JSON(http.StatusBadRequest, response.InputFieldError(err))
+	input, err := requestutils.BindInputFromRequest[registerInput](ctx)
+	if err != nil {
 		return
 	}
 

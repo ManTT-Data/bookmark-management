@@ -1,4 +1,4 @@
-package handler
+package url
 
 import (
 	"errors"
@@ -7,7 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
-	"github.com/ManTT-Data/bookmark-management/internal/app/service"
+	urlService "github.com/ManTT-Data/bookmark-management/internal/app/service/url"
+	"github.com/ManTT-Data/bookmark-management/pkg/requestutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/response"
 )
 
@@ -18,11 +19,11 @@ type ShortenURL interface {
 }
 
 type shortenURL struct {
-	service service.ShortenUrl
+	service urlService.ShortenUrl
 }
 
 // NewShortenURL creates a new link Handler
-func NewShortenURL(svc service.ShortenUrl) ShortenURL {
+func NewShortenURL(svc urlService.ShortenUrl) ShortenURL {
 	return &shortenURL{service: svc}
 }
 
@@ -42,7 +43,7 @@ func (h *shortenURL) Redirect(c *gin.Context) {
 
 	url, err := h.service.GetLinkFromCode(c, code)
 	if err != nil {
-		if errors.Is(err, service.ErrCodeDoesntExist) {
+		if errors.Is(err, urlService.ErrCodeDoesntExist) {
 			c.JSON(http.StatusBadRequest, response.InputErrResponse)
 			return
 		}
@@ -74,9 +75,8 @@ type shortenInputBody struct {
 // @Success      200 {object} shortenResMessage
 // @Router       /v1/links/shorten [post]
 func (h *shortenURL) ShortenLink(c *gin.Context) {
-	input := &shortenInputBody{}
-	if err := c.ShouldBindJSON(input); err != nil {
-		c.JSON(http.StatusBadRequest, response.InputFieldError(err))
+	input, err := requestutils.BindInputFromRequest[shortenInputBody](c)
+	if err != nil {
 		return
 	}
 

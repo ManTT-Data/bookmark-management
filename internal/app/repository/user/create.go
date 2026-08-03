@@ -14,9 +14,3 @@ func (r *postgresRepository) CreateUser(ctx context.Context, user *model.User) (
 	}
 	return user, nil
 }
-
-func (r *postgresRepository) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
-	var user model.User
-	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
-	return &user, err
-}

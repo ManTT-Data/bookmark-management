@@ -5,6 +5,7 @@ import (
 
 	"github.com/ManTT-Data/bookmark-management/internal/app/model"
 	"github.com/ManTT-Data/bookmark-management/internal/test/data/fixtures"
+	"github.com/ManTT-Data/bookmark-management/pkg/dbutils"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -170,10 +171,10 @@ func TestSqlRepository_GetUserByUsername(t *testing.T) {
 			},
 			inputUsername: "non_existing_user",
 			expectError:   true,
-			expectedErr:   gorm.ErrRecordNotFound,
+			expectedErr:   dbutils.ErrRecordNotFound,
 			verifyFunc: func(t *testing.T, user *model.User, err error) {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+				assert.ErrorIs(t, err, dbutils.ErrRecordNotFound)
 			},
 		},
 	}

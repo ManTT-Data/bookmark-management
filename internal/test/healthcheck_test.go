@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,8 +14,6 @@ import (
 	redisPkg "github.com/ManTT-Data/bookmark-management/pkg/redis"
 	"github.com/ManTT-Data/bookmark-management/pkg/sqldb"
 )
-
-var testErr = errors.New("test error")
 
 func TestHealthCheckEndpoint(t *testing.T) {
 	t.Parallel()
@@ -83,7 +80,12 @@ func TestHealthCheckEndpoint(t *testing.T) {
 			mockDB := sqldb.InitMockDB(t)
 
 			// Initialize the Gin router
-			testRouter := api.New(gin.New(), cfg, mockRedis, mockDB)
+			testRouter := api.New(&api.EngineOpts{
+				App:   gin.New(),
+				Cfg:   cfg,
+				Redis: mockRedis,
+				DB:    mockDB,
+			})
 			recorder := tc.setupTestHTTP(testRouter)
 			assert.Equal(t, tc.expectedStatusCode, recorder.Code)
 			assert.JSONEq(t, tc.expectedResponseBody, recorder.Body.String())
