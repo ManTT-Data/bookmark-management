@@ -9,6 +9,7 @@ import (
 	"github.com/ManTT-Data/bookmark-management/internal/api"
 	"github.com/ManTT-Data/bookmark-management/internal/app/model"
 	"github.com/ManTT-Data/bookmark-management/pkg/common"
+	"github.com/ManTT-Data/bookmark-management/pkg/jwtutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/logger"
 	redisPkg "github.com/ManTT-Data/bookmark-management/pkg/redis"
 	"github.com/ManTT-Data/bookmark-management/pkg/sqldb"
@@ -18,6 +19,9 @@ import (
 // @version         1.0
 // @description     API documentation for bookmark service.
 // @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// Init app config
 	cfg := createAPIConfig()
@@ -38,8 +42,15 @@ func main() {
 	err = db.AutoMigrate(&model.User{})
 	common.HandleError(err)
 
+	// Init JWT Generator & Validator
+	jwtGen, err := jwtutils.NewJWTGenerator(cfg.PrivateKeyPath)
+	common.HandleError(err)
+
+	jwtVal, err := jwtutils.NewJWTValidator(cfg.PublicKeyPath)
+	common.HandleError(err)
+
 	// Init api app
-	a := createAPIApp(cfg, redisClient, db)
+	a := createAPIApp(cfg, redisClient, db, jwtGen, jwtVal)
 
 	// Start api app
 	common.HandleError(a.Start())
@@ -68,9 +79,16 @@ func createAPIConfig() *api.Config {
 }
 
 // createAPIApp creates API application based on API configuration
-func createAPIApp(cfg *api.Config, redis *redis.Client, db *gorm.DB) api.Engine {
+func createAPIApp(cfg *api.Config, redis *redis.Client, db *gorm.DB, jwtGen jwtutils.JWTGenerator, jwtVal jwtutils.JWTValidator) api.Engine {
 	app := gin.New()
-	a := api.New(app, cfg, redis, db)
+	a := api.New(&api.EngineOpts{
+		App:    app,
+		Cfg:    cfg,
+		Redis:  redis,
+		DB:     db,
+		JWTGen: jwtGen,
+		JWTVal: jwtVal,
+	})
 
 	return a
 }

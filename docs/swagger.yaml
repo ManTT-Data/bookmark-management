@@ -42,6 +42,16 @@ definitions:
       message:
         type: string
     type: object
+  user.loginInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
   user.registerInput:
     properties:
       email:
@@ -116,6 +126,59 @@ paths:
       summary: Generate shorten url based on original url that last upto 7 days
       tags:
       - link
+  /v1/self/info:
+    get:
+      consumes:
+      - application/json
+      description: Get self info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get self info
+      tags:
+      - user
+  /v1/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Login an existing user with username and password
+      parameters:
+      - description: User login info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/user.loginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User successfully logged in
+          schema:
+            $ref: '#/definitions/response.Message'
+        "400":
+          description: Invalid input parameters
+          schema:
+            $ref: '#/definitions/response.Message'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Message'
+      summary: Login an existing user
+      tags:
+      - user
   /v1/users/register:
     post:
       consumes:
@@ -146,4 +209,9 @@ paths:
       summary: Register a new user account
       tags:
       - user
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -1,4 +1,4 @@
-package handler
+package healthcheck
 
 import (
 	"net/http"
@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
-	"github.com/ManTT-Data/bookmark-management/internal/app/repository"
-	"github.com/ManTT-Data/bookmark-management/internal/app/service"
+	pingRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/ping"
+	healthService "github.com/ManTT-Data/bookmark-management/internal/app/service/healthcheck"
 )
 
 // HealthCheck represents the interface of health check handler
@@ -17,13 +17,13 @@ type HealthCheck interface {
 
 // healthCheckHandler represents the health check handler
 type healthCheckHandler struct {
-	service service.Healthcheck
+	service healthService.Healthcheck
 }
 
 // NewHealthCheck creates a new health check handler
-func NewHealthCheck(serviceName, instanceID string, pingRepo repository.Ping) HealthCheck {
+func NewHealthCheck(serviceName, instanceID string, pingRepo pingRepo.Ping) HealthCheck {
 	return &healthCheckHandler{
-		service: service.NewHealthcheck(serviceName, instanceID, pingRepo),
+		service: healthService.NewHealthcheck(serviceName, instanceID, pingRepo),
 	}
 }
 

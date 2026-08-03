@@ -11,12 +11,16 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ManTT-Data/bookmark-management/docs"
-	"github.com/ManTT-Data/bookmark-management/internal/app/handler"
+	"github.com/ManTT-Data/bookmark-management/internal/api/middleware"
+	healthHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/healthcheck"
+	urlHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/url"
 	userHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/user"
-	"github.com/ManTT-Data/bookmark-management/internal/app/repository"
+	pingRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/ping"
+	urlRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/url"
 	userRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/user"
-	"github.com/ManTT-Data/bookmark-management/internal/app/service"
+	urlService "github.com/ManTT-Data/bookmark-management/internal/app/service/url"
 	userService "github.com/ManTT-Data/bookmark-management/internal/app/service/user"
+	"github.com/ManTT-Data/bookmark-management/pkg/jwtutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/utils"
 )
 
@@ -28,19 +32,32 @@ type Engine interface {
 
 // api represents the struct for internal API operations
 type api struct {
-	app   *gin.Engine
-	cfg   *Config
-	redis *redis.Client
-	db    *gorm.DB
+	app    *gin.Engine
+	cfg    *Config
+	redis  *redis.Client
+	db     *gorm.DB
+	jwtGen jwtutils.JWTGenerator
+	jwtVal jwtutils.JWTValidator
+}
+
+type EngineOpts struct {
+	App    *gin.Engine
+	Cfg    *Config
+	Redis  *redis.Client
+	DB     *gorm.DB
+	JWTGen jwtutils.JWTGenerator
+	JWTVal jwtutils.JWTValidator
 }
 
 // New creates a new API Engine instance
-func New(app *gin.Engine, cfg *Config, redis *redis.Client, db *gorm.DB) Engine {
+func New(opts *EngineOpts) Engine {
 	a := &api{
-		app:   app,
-		cfg:   cfg,
-		redis: redis,
-		db:    db,
+		app:    opts.App,
+		cfg:    opts.Cfg,
+		redis:  opts.Redis,
+		db:     opts.DB,
+		jwtGen: opts.JWTGen,
+		jwtVal: opts.JWTVal,
 	}
 	a.initRoutes()
 	return a
@@ -58,36 +75,42 @@ func (a *api) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // handlers represents the struct for containing all the necessary handlers for API
 type handlers struct {
-	healthCheckHandler handler.HealthCheck
-	linkHandler        handler.ShortenURL
+	healthCheckHandler healthHandler.HealthCheck
+	linkHandler        urlHandler.ShortenURL
 	userHandler        userHandler.UserHandler
 }
 
 // initHandlers initializes the api handlers
 func (a *api) initHandlers() *handlers {
-	pingRepo := repository.NewPing(a.redis)
-	urlStorageRepo := repository.NewURLStorage(a.redis)
+	pingRepo := pingRepo.NewPing(a.redis)
+	urlStorageRepo := urlRepo.NewURLStorage(a.redis)
 	keyGenerator := utils.NewKeyGenerator()
-	shortenUrlService := service.NewShortenUrl(urlStorageRepo, keyGenerator)
+	shortenUrlService := urlService.NewShortenUrl(urlStorageRepo, keyGenerator)
 
 	//user
 	userRepo := userRepo.NewRepository(a.db)
 	hasher := utils.NewHasher()
-	userService := userService.NewService(userRepo, hasher)
+	userService := userService.NewService(userRepo, hasher, a.jwtGen)
 
 	return &handlers{
-		healthCheckHandler: handler.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, pingRepo),
-		linkHandler:        handler.NewShortenURL(shortenUrlService),
+		healthCheckHandler: healthHandler.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, pingRepo),
+		linkHandler:        urlHandler.NewShortenURL(shortenUrlService),
 		userHandler:        userHandler.NewUserHandler(userService),
 	}
 }
 
 // initRoutes initializes the api routes
 func (a *api) initRoutes() {
+	a.app.Use(gin.Recovery())
+	a.app.Use(middleware.CORS())
+
 	allHandlers := a.initHandlers()
 
 	// health-check
 	a.app.GET("/health-check", allHandlers.healthCheckHandler.HealthCheck)
+
+	//Init middleware
+	jwtAuth := middleware.NewJWTAuth(a.jwtVal)
 
 	// Init swagger routes
 	docs.SwaggerInfo.BasePath = a.cfg.BasePath
@@ -101,5 +124,10 @@ func (a *api) initRoutes() {
 
 		// user
 		v1Routes.POST("/users/register", allHandlers.userHandler.Register)
+		v1Routes.POST("/users/login", allHandlers.userHandler.Login)
+
+		//self
+		v1Routes.Use(jwtAuth.JWTAuth())
+		v1Routes.GET("/self/info", allHandlers.userHandler.GetSelfInfo)
 	}
 }

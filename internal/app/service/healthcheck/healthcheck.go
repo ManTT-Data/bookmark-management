@@ -1,4 +1,4 @@
-package service
+package healthcheck
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/ManTT-Data/bookmark-management/internal/app/model"
-	"github.com/ManTT-Data/bookmark-management/internal/app/repository"
+	pingRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/ping"
 )
 
 var (
@@ -24,11 +24,11 @@ type Healthcheck interface {
 type healthcheck struct {
 	serviceName string
 	instanceID  string
-	pingRepo    repository.Ping
+	pingRepo    pingRepo.Ping
 }
 
 // NewHealthcheck returns a new healthcheck service
-func NewHealthcheck(serviceName, instanceID string, pingRepo repository.Ping) Healthcheck {
+func NewHealthcheck(serviceName, instanceID string, pingRepo pingRepo.Ping) Healthcheck {
 	s := &healthcheck{
 		serviceName: serviceName,
 		instanceID:  instanceID,

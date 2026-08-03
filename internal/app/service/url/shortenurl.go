@@ -1,4 +1,4 @@
-package service
+package url
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/ManTT-Data/bookmark-management/internal/app/repository"
+	urlRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/url"
 	"github.com/ManTT-Data/bookmark-management/pkg/utils"
 )
 
@@ -21,12 +21,12 @@ type ShortenUrl interface {
 
 // service represents the structure of a link service
 type shortenURLService struct {
-	repo   repository.URLStorage
+	repo   urlRepo.URLStorage
 	keyGen utils.KeyGenerator
 }
 
 // NewShortenUrl returns a new healthcheck service
-func NewShortenUrl(repo repository.URLStorage, keyGen utils.KeyGenerator) ShortenUrl {
+func NewShortenUrl(repo urlRepo.URLStorage, keyGen utils.KeyGenerator) ShortenUrl {
 	s := &shortenURLService{
 		repo:   repo,
 		keyGen: keyGen,

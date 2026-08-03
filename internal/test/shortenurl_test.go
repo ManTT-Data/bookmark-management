@@ -74,7 +74,12 @@ func TestShortenLinkEndpoint(t *testing.T) {
 			mockDB := sqldb.InitMockDB(t)
 
 			// Initialize the Gin router
-			testRouter := api.New(gin.New(), &api.Config{}, mockRedis, mockDB)
+			testRouter := api.New(&api.EngineOpts{
+				App:   gin.New(),
+				Cfg:   &api.Config{},
+				Redis: mockRedis,
+				DB:    mockDB,
+			})
 			recorder := tc.setupTestHTTP(testRouter)
 			assert.Equal(t, tc.expectedStatusCode, recorder.Code)
 			assert.Contains(t, recorder.Body.String(), tc.expectedResponseBody)
@@ -137,7 +142,12 @@ func TestRedirectLink(t *testing.T) {
 			mockDB := sqldb.InitMockDB(t)
 
 			// Initialize the Gin router
-			testRouter := api.New(gin.New(), &api.Config{}, mockRedis, mockDB)
+			testRouter := api.New(&api.EngineOpts{
+				App:   gin.New(),
+				Cfg:   &api.Config{},
+				Redis: mockRedis,
+				DB:    mockDB,
+			})
 			recorder := tc.setupTestHTTP(testRouter)
 			assert.Equal(t, tc.expectedStatusCode, recorder.Code)
 		})

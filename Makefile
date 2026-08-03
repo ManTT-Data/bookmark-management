@@ -13,7 +13,8 @@ export IMG_TAG
 
 dev-run:
 	swag init -g ./cmd/api/main.go --output docs
-	go run cmd/api/main.go
+	go build -o app.exe ./cmd/api/main.go
+	./app.exe
 
 swagger:
 	swag init -g ./cmd/api/main.go --output docs
@@ -61,3 +62,7 @@ docker-login:
 
 docker-release:
 	docker push $(IMG_NAME):$(IMG_TAG)
+
+generate-rsa-key:
+	openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:2048
+	openssl rsa -pubout -in private.key -out public.key
