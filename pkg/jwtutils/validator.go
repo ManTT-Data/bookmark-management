@@ -7,6 +7,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+//go:generate mockery --name JWTValidator --filename validator.go --output mocks --outpkg mocks
+// JWTValidator defines token validation operations.
 type JWTValidator interface {
 	ValidateToken(tokenString string) (jwt.MapClaims, error)
 }

@@ -13,8 +13,7 @@ export IMG_TAG
 
 dev-run:
 	swag init -g ./cmd/api/main.go --output docs
-	go build -o app.exe ./cmd/api/main.go
-	./app.exe
+	go run ./cmd/api/main.go
 
 swagger:
 	swag init -g ./cmd/api/main.go --output docs
