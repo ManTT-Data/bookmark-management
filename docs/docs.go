@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.shortenInputBody"
+                            "$ref": "#/definitions/url.shortenInputBody"
                         }
                     }
                 ],
@@ -93,7 +93,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.shortenResMessage"
+                            "$ref": "#/definitions/url.shortenResMessage"
                         }
                     }
                 }
@@ -229,33 +229,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.shortenInputBody": {
-            "type": "object",
-            "required": [
-                "exp",
-                "url"
-            ],
-            "properties": {
-                "exp": {
-                    "type": "integer",
-                    "maximum": 604800
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "handler.shortenResMessage": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "model.Message": {
             "type": "object",
             "properties": {
@@ -288,6 +261,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "details": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "url.shortenInputBody": {
+            "type": "object",
+            "required": [
+                "exp",
+                "url"
+            ],
+            "properties": {
+                "exp": {
+                    "type": "integer",
+                    "maximum": 604800
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "url.shortenResMessage": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
                 "message": {
                     "type": "string"
                 }

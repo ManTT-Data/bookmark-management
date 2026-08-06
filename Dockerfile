@@ -40,7 +40,10 @@ WORKDIR /app
 
 COPY --from=build /opt/app/bookmark_service /app/bookmark_service
 COPY --from=build /opt/app/docs /app/docs
+COPY --from=build /opt/app/internal/migration /app/internal/migration
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apk add --no-cache tzdata && \
+      ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+      echo $TZ > /etc/timezone
 
 CMD ["/app/bookmark_service"]

@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ManTT-Data/bookmark-management/internal/api"
-	"github.com/ManTT-Data/bookmark-management/internal/app/model"
 	"github.com/ManTT-Data/bookmark-management/pkg/common"
 	"github.com/ManTT-Data/bookmark-management/pkg/jwtutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/logger"
@@ -39,7 +38,8 @@ func main() {
 	db, err := createSQLClient()
 	common.HandleError(err)
 
-	err = db.AutoMigrate(&model.User{})
+	const migrationPath = "file://./internal/migration"
+	err = sqldb.MigrateSQLDB(db, migrationPath)
 	common.HandleError(err)
 
 	// Init JWT Generator & Validator

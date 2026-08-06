@@ -1,23 +1,5 @@
 basePath: /
 definitions:
-  handler.shortenInputBody:
-    properties:
-      exp:
-        maximum: 604800
-        type: integer
-      url:
-        type: string
-    required:
-    - exp
-    - url
-    type: object
-  handler.shortenResMessage:
-    properties:
-      code:
-        type: string
-      message:
-        type: string
-    type: object
   model.Message:
     properties:
       instance_id:
@@ -39,6 +21,24 @@ definitions:
   response.Message:
     properties:
       details: {}
+      message:
+        type: string
+    type: object
+  url.shortenInputBody:
+    properties:
+      exp:
+        maximum: 604800
+        type: integer
+      url:
+        type: string
+    required:
+    - exp
+    - url
+    type: object
+  url.shortenResMessage:
+    properties:
+      code:
+        type: string
       message:
         type: string
     type: object
@@ -115,14 +115,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/handler.shortenInputBody'
+          $ref: '#/definitions/url.shortenInputBody'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.shortenResMessage'
+            $ref: '#/definitions/url.shortenResMessage'
       summary: Generate shorten url based on original url that last upto 7 days
       tags:
       - link
