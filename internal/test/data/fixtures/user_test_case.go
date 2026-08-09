@@ -18,7 +18,7 @@ func (u *UserCommonTestCase) SetupDB(db *gorm.DB) {
 }
 
 func (u *UserCommonTestCase) Migrate() error {
-	return u.db.AutoMigrate(&model.User{})
+	return u.db.AutoMigrate(&model.User{}, &model.Bookmark{})
 }
 
 func (u *UserCommonTestCase) GenerateData() error {

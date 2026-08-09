@@ -12,12 +12,15 @@ import (
 
 	"github.com/ManTT-Data/bookmark-management/docs"
 	"github.com/ManTT-Data/bookmark-management/internal/api/middleware"
+	bookmarkHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/bookmark"
 	healthHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/healthcheck"
 	urlHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/url"
 	userHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/user"
+	bookmarkRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/bookmark"
 	pingRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/ping"
 	urlRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/url"
 	userRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/user"
+	bookmarkService "github.com/ManTT-Data/bookmark-management/internal/app/service/bookmark"
 	urlService "github.com/ManTT-Data/bookmark-management/internal/app/service/url"
 	userService "github.com/ManTT-Data/bookmark-management/internal/app/service/user"
 	"github.com/ManTT-Data/bookmark-management/pkg/jwtutils"
@@ -75,6 +78,7 @@ func (a *api) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // handlers represents the struct for containing all the necessary handlers for API
 type handlers struct {
+	bookmarkHandler    bookmarkHandler.Handler
 	healthCheckHandler healthHandler.HealthCheck
 	linkHandler        urlHandler.ShortenURL
 	userHandler        userHandler.UserHandler
@@ -87,12 +91,16 @@ func (a *api) initHandlers() *handlers {
 	keyGenerator := utils.NewKeyGenerator()
 	shortenUrlService := urlService.NewShortenUrl(urlStorageRepo, keyGenerator)
 
-	//user
+	// user
 	userRepo := userRepo.NewRepository(a.db)
 	hasher := utils.NewHasher()
 	userService := userService.NewService(userRepo, hasher, a.jwtGen)
 
+	bookmarkRepo := bookmarkRepo.NewRepository(a.db)
+	bookmarkService := bookmarkService.NewService(bookmarkRepo, keyGenerator)
+
 	return &handlers{
+		bookmarkHandler:    bookmarkHandler.NewHandler(bookmarkService),
 		healthCheckHandler: healthHandler.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, pingRepo),
 		linkHandler:        urlHandler.NewShortenURL(shortenUrlService),
 		userHandler:        userHandler.NewUserHandler(userService),
@@ -126,8 +134,12 @@ func (a *api) initRoutes() {
 		v1Routes.POST("/users/register", allHandlers.userHandler.Register)
 		v1Routes.POST("/users/login", allHandlers.userHandler.Login)
 
-		//self
+		// authenticated routes
 		v1Routes.Use(jwtAuth.JWTAuth())
 		v1Routes.GET("/self/info", allHandlers.userHandler.GetSelfInfo)
+		v1Routes.POST("/bookmarks", allHandlers.bookmarkHandler.Create)
+		v1Routes.GET("/bookmarks", allHandlers.bookmarkHandler.List)
+		v1Routes.PUT("/bookmarks/:id", allHandlers.bookmarkHandler.Update)
+		v1Routes.DELETE("/bookmarks/:id", allHandlers.bookmarkHandler.Delete)
 	}
 }
