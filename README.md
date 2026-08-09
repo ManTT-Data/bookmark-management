@@ -1,12 +1,14 @@
 # Bookmark Management Service
 
-A Go REST API for creating temporary short links and redirecting them to their original URLs. Link data is stored in Redis and may expire after at most seven days.
+A Go REST API for creating temporary short links and managing authenticated users' persistent bookmarks. Short-link data is stored in Redis and may expire after at most seven days; user accounts and bookmarks are stored in PostgreSQL through versioned SQL migrations.
 
 ## Features
 
 - Create a short link with a caller-provided expiration time
 - Redirect a short code to its original URL
 - Redis-backed health check
+- User registration, RSA JWT login, and self-profile endpoint
+- Authenticated bookmark CRUD with server-side pagination and safe sorting
 - Swagger UI and OpenAPI specifications
 - Local and reverse-proxy Docker Compose deployments
 
@@ -30,6 +32,14 @@ The service reads environment variables directly. Defaults are used when a varia
 | `REDIS_ADDR` | `localhost:6379` | Redis host and port |
 | `REDIS_PWD` | empty | Redis password |
 | `REDIS_DB` | `0` | Redis database index |
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_NAME` | `bookmark_db` | PostgreSQL database name |
+| `DB_USER` | `postgres` | PostgreSQL user |
+| `DB_PASSWORD` | `postgres` | PostgreSQL password |
+| `DB_SSL_MODE` | `disable` | PostgreSQL SSL mode |
+| `PRIVATE_KEY_PATH` | `./private.key` | RSA private key used to sign JWTs |
+| `PUBLIC_KEY_PATH` | `./public.key` | RSA public key used to validate JWTs |
 
 Do **not** commit environment files. For the Nginx deployment, copy the tracked template and adjust it locally:
 
@@ -80,6 +90,27 @@ Main endpoints:
 | `GET` | `/health-check` | Checks that Redis is available |
 | `POST` | `/v1/links/shorten` | Creates a short link |
 | `GET` | `/v1/links/redirect/:code` | Redirects to the original URL |
+| `POST` | `/v1/users/register` | Creates a user account |
+| `POST` | `/v1/users/login` | Returns an RSA-signed JWT |
+| `GET` | `/v1/self/info` | Returns the current user profile |
+| `POST` | `/v1/bookmarks` | Creates a bookmark for the current user |
+| `GET` | `/v1/bookmarks` | Lists current-user bookmarks with pagination |
+| `PUT` | `/v1/bookmarks/:id` | Updates a current-user bookmark |
+| `DELETE` | `/v1/bookmarks/:id` | Deletes a current-user bookmark |
+
+Bookmark endpoints require `Authorization: Bearer <token>`. `GET /v1/bookmarks` accepts optional `page` (default `1`), `limit` (default `20`, maximum `100`), and `sort` (`created_at`, `updated_at`, `description`, or `url`) query parameters. Results include the requested page, limit, and the total matching bookmark count.
+
+Example bookmark creation:
+
+```bash
+curl --request POST http://localhost:8080/v1/bookmarks \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{"description":"Google","url":"https://www.google.com"}'
+```
+
+Database schema is applied by `golang-migrate` at application startup from `internal/migration`; production code does not use `gorm.AutoMigrate`.
+
 
 Example request:
 
