@@ -1,5 +1,69 @@
 basePath: /
 definitions:
+  bookmark.createInput:
+    properties:
+      description:
+        maxLength: 255
+        type: string
+      url:
+        maxLength: 255
+        type: string
+    required:
+    - description
+    - url
+    type: object
+  bookmark.createResponse:
+    properties:
+      data:
+        $ref: '#/definitions/model.Bookmark'
+      message:
+        type: string
+    type: object
+  bookmark.listResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.Bookmark'
+        type: array
+      pagination:
+        $ref: '#/definitions/bookmark.pagination'
+    type: object
+  bookmark.pagination:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  bookmark.updateInput:
+    properties:
+      description:
+        maxLength: 255
+        type: string
+      url:
+        maxLength: 255
+        type: string
+    required:
+    - description
+    - url
+    type: object
+  model.Bookmark:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
   model.Message:
     properties:
       instance_id:
@@ -87,6 +151,162 @@ paths:
       summary: Health check function
       tags:
       - health-check
+  /v1/bookmarks:
+    get:
+      description: List paginated bookmarks for the authenticated user
+      parameters:
+      - description: Page number, default 1
+        in: query
+        name: page
+        type: integer
+      - description: Items per page, default 20, maximum 100
+        in: query
+        name: limit
+        type: integer
+      - description: created_at, updated_at, description, or url
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bookmark.listResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Message'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Message'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Message'
+      security:
+      - BearerAuth: []
+      summary: List bookmarks
+      tags:
+      - bookmark
+    post:
+      consumes:
+      - application/json
+      description: Create a bookmark for the authenticated user
+      parameters:
+      - description: Bookmark input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/bookmark.createInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bookmark.createResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Message'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Message'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Message'
+      security:
+      - BearerAuth: []
+      summary: Create a bookmark
+      tags:
+      - bookmark
+  /v1/bookmarks/{id}:
+    delete:
+      description: Delete a bookmark owned by the authenticated user
+      parameters:
+      - description: Bookmark ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Message'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Message'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Message'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Message'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Message'
+      security:
+      - BearerAuth: []
+      summary: Delete a bookmark
+      tags:
+      - bookmark
+    put:
+      consumes:
+      - application/json
+      description: Update a bookmark owned by the authenticated user
+      parameters:
+      - description: Bookmark ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Bookmark input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/bookmark.updateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Message'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Message'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Message'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Message'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Message'
+      security:
+      - BearerAuth: []
+      summary: Update a bookmark
+      tags:
+      - bookmark
   /v1/links/redirect/{code}:
     get:
       consumes:
