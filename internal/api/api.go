@@ -17,6 +17,7 @@ import (
 	urlHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/url"
 	userHandler "github.com/ManTT-Data/bookmark-management/internal/app/handler/user"
 	bookmarkRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/bookmark"
+	cacheRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/cache"
 	pingRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/ping"
 	urlRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/url"
 	userRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/user"
@@ -89,18 +90,20 @@ func (a *api) initHandlers() *handlers {
 	pingRepo := pingRepo.NewPing(a.redis)
 	urlStorageRepo := urlRepo.NewURLStorage(a.redis)
 	keyGenerator := utils.NewKeyGenerator()
-	shortenUrlService := urlService.NewShortenUrl(urlStorageRepo, keyGenerator)
+	bookmarkRepository := bookmarkRepo.NewRepository(a.db)
+	shortenUrlService := urlService.NewShortenUrl(urlStorageRepo, bookmarkRepository, keyGenerator)
 
 	// user
 	userRepo := userRepo.NewRepository(a.db)
 	hasher := utils.NewHasher()
 	userService := userService.NewService(userRepo, hasher, a.jwtGen)
 
-	bookmarkRepo := bookmarkRepo.NewRepository(a.db)
-	bookmarkService := bookmarkService.NewService(bookmarkRepo, keyGenerator)
+	bookmarkPrimaryService := bookmarkService.NewService(bookmarkRepository, keyGenerator)
+	bookmarkCache := cacheRepo.NewRedisDB(a.redis)
+	cachedBookmarkService := bookmarkService.NewCache(bookmarkPrimaryService, bookmarkCache)
 
 	return &handlers{
-		bookmarkHandler:    bookmarkHandler.NewHandler(bookmarkService),
+		bookmarkHandler:    bookmarkHandler.NewHandler(cachedBookmarkService),
 		healthCheckHandler: healthHandler.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, pingRepo),
 		linkHandler:        urlHandler.NewShortenURL(shortenUrlService),
 		userHandler:        userHandler.NewUserHandler(userService),

@@ -18,6 +18,11 @@ coverage.html
 
 # Generated AI context
 repomix-output.xml
+*-repomix.xml
+.claude/
+
+# Deployment data
+deployment/*-data/
 
 # Editor and OS files
 .vscode/

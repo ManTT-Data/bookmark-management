@@ -2,12 +2,14 @@ package url
 
 import (
 	"context"
+	"errors"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 
+	bookmarkRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/bookmark"
 	urlRepo "github.com/ManTT-Data/bookmark-management/internal/app/repository/url"
+	"github.com/ManTT-Data/bookmark-management/pkg/dbutils"
 	"github.com/ManTT-Data/bookmark-management/pkg/utils"
 )
 
@@ -21,21 +23,26 @@ type ShortenUrl interface {
 
 // service represents the structure of a link service
 type shortenURLService struct {
-	repo   urlRepo.URLStorage
-	keyGen utils.KeyGenerator
+	repo         urlRepo.URLStorage
+	bookmarkRepo bookmarkRepo.Repository
+	keyGen       utils.KeyGenerator
 }
 
 // NewShortenUrl returns a new healthcheck service
-func NewShortenUrl(repo urlRepo.URLStorage, keyGen utils.KeyGenerator) ShortenUrl {
+func NewShortenUrl(repo urlRepo.URLStorage, bookmarkRepo bookmarkRepo.Repository, keyGen utils.KeyGenerator) ShortenUrl {
 	s := &shortenURLService{
-		repo:   repo,
-		keyGen: keyGen,
+		repo:         repo,
+		bookmarkRepo: bookmarkRepo,
+		keyGen:       keyGen,
 	}
 
 	return s
 }
 
-const linkKeyLength = 7
+const (
+	linkKeyLength     = 7
+	bookmarkKeyLength = 8
+)
 
 // CreateShortenLink stores a shorten link in cache and return cache key
 func (s *shortenURLService) CreateShortenLink(ctx context.Context, url string, exp int64) (string, error) {
@@ -63,10 +70,28 @@ var ErrCodeDoesntExist = errors.New("code does not exist")
 
 // GetLinkFromCode return the original from shorten code
 func (s *shortenURLService) GetLinkFromCode(ctx context.Context, code string) (string, error) {
-	link, err := s.repo.GetURL(ctx, code)
-	if errors.Is(err, redis.Nil) {
+	switch len(code) {
+	case linkKeyLength:
+		link, err := s.repo.GetURL(ctx, code)
+		if errors.Is(err, redis.Nil) {
+			return "", ErrCodeDoesntExist
+		}
+		return link, err
+
+	case bookmarkKeyLength:
+		if s.bookmarkRepo == nil {
+			return "", ErrCodeDoesntExist
+		}
+		bm, err := s.bookmarkRepo.GetByCode(ctx, code)
+		if errors.Is(err, dbutils.ErrRecordNotFound) {
+			return "", ErrCodeDoesntExist
+		}
+		if err != nil {
+			return "", err
+		}
+		return bm.URL, nil
+
+	default:
 		return "", ErrCodeDoesntExist
 	}
-
-	return link, err
 }

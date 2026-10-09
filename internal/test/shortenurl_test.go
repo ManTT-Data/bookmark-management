@@ -10,8 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"github.com/ManTT-Data/bookmark-management/internal/api"
+	"github.com/ManTT-Data/bookmark-management/internal/app/model"
 	redisPkg "github.com/ManTT-Data/bookmark-management/pkg/redis"
 	"github.com/ManTT-Data/bookmark-management/pkg/sqldb"
 )
@@ -95,11 +97,13 @@ func TestRedirectLink(t *testing.T) {
 
 		setupTestHTTP func(api api.Engine) *httptest.ResponseRecorder
 		setupRedis    func(ctx context.Context) *redis.Client
+		setupDB       func(t *testing.T, db *gorm.DB)
 
 		expectedStatusCode int
+		expectedLocation   string
 	}{
 		{
-			name: "normal case",
+			name: "normal case - redis link (len 7)",
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
 				req, _ := http.NewRequest("GET", "/v1/links/redirect/1234567", nil)
 				respRecorder := httptest.NewRecorder()
@@ -111,11 +115,11 @@ func TestRedirectLink(t *testing.T) {
 				mock.Set(ctx, "1234567", "https://blah.com", 300)
 				return mock
 			},
-
 			expectedStatusCode: http.StatusFound,
+			expectedLocation:   "https://blah.com",
 		},
 		{
-			name: "err case - code doesn't exist",
+			name: "err case - redis code doesn't exist (len 7)",
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
 				req, _ := http.NewRequest("GET", "/v1/links/redirect/1234567", nil)
 				respRecorder := httptest.NewRecorder()
@@ -126,7 +130,64 @@ func TestRedirectLink(t *testing.T) {
 				mock := redisPkg.InitMockRedis(t)
 				return mock
 			},
-
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "normal case - bookmark from db (len 8)",
+			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
+				req, _ := http.NewRequest("GET", "/v1/links/redirect/bm123456", nil)
+				respRecorder := httptest.NewRecorder()
+				api.ServeHTTP(respRecorder, req)
+				return respRecorder
+			},
+			setupRedis: func(ctx context.Context) *redis.Client {
+				mock := redisPkg.InitMockRedis(t)
+				return mock
+			},
+			setupDB: func(t *testing.T, db *gorm.DB) {
+				err := db.AutoMigrate(&model.Bookmark{})
+				assert.NoError(t, err)
+				err = db.Create(&model.Bookmark{
+					ID:     "bm-1",
+					Code:   "bm123456",
+					URL:    "https://google.com/search?q=golang",
+					UserID: "user-1",
+				}).Error
+				assert.NoError(t, err)
+			},
+			expectedStatusCode: http.StatusFound,
+			expectedLocation:   "https://google.com/search?q=golang",
+		},
+		{
+			name: "err case - bookmark code doesn't exist in db (len 8)",
+			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
+				req, _ := http.NewRequest("GET", "/v1/links/redirect/nonexist", nil)
+				respRecorder := httptest.NewRecorder()
+				api.ServeHTTP(respRecorder, req)
+				return respRecorder
+			},
+			setupRedis: func(ctx context.Context) *redis.Client {
+				mock := redisPkg.InitMockRedis(t)
+				return mock
+			},
+			setupDB: func(t *testing.T, db *gorm.DB) {
+				err := db.AutoMigrate(&model.Bookmark{})
+				assert.NoError(t, err)
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "err case - invalid code length (len 4)",
+			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
+				req, _ := http.NewRequest("GET", "/v1/links/redirect/test", nil)
+				respRecorder := httptest.NewRecorder()
+				api.ServeHTTP(respRecorder, req)
+				return respRecorder
+			},
+			setupRedis: func(ctx context.Context) *redis.Client {
+				mock := redisPkg.InitMockRedis(t)
+				return mock
+			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 	}
@@ -140,6 +201,9 @@ func TestRedirectLink(t *testing.T) {
 			// generate test redis
 			mockRedis := tc.setupRedis(ctx)
 			mockDB := sqldb.InitMockDB(t)
+			if tc.setupDB != nil {
+				tc.setupDB(t, mockDB)
+			}
 
 			// Initialize the Gin router
 			testRouter := api.New(&api.EngineOpts{
@@ -150,6 +214,9 @@ func TestRedirectLink(t *testing.T) {
 			})
 			recorder := tc.setupTestHTTP(testRouter)
 			assert.Equal(t, tc.expectedStatusCode, recorder.Code)
+			if tc.expectedLocation != "" {
+				assert.Equal(t, tc.expectedLocation, recorder.Header().Get("Location"))
+			}
 		})
 	}
 }

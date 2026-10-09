@@ -33,13 +33,16 @@ func CatchErr(err error) error {
 }
 
 func FilterDuplicateEmail(err error) (bool, error) {
-	if strings.Contains(strings.ToLower(err.Error()), "email_unique") {
+	message := strings.ToLower(err.Error())
+	if strings.Contains(message, "uni_email") || strings.Contains(message, "users.email") {
 		return true, ErrDuplicateEmail
 	}
 	return false, nil
 }
+
 func FilterDuplicateUserName(err error) (bool, error) {
-	if strings.Contains(strings.ToLower(err.Error()), "username_unique") {
+	message := strings.ToLower(err.Error())
+	if strings.Contains(message, "uni_username") || strings.Contains(message, "users.username") {
 		return true, ErrDuplicateUserName
 	}
 	return false, nil
