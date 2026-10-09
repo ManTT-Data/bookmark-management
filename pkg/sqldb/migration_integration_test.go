@@ -84,7 +84,7 @@ func TestMigrateSQLDB(t *testing.T) {
 	if err := db.Raw("SELECT version, dirty FROM schema_migrations").Scan(&version).Error; err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version.Version != 1 || version.Dirty {
+	if version.Version != 3 || version.Dirty {
 		t.Fatalf("unexpected migration state: version=%d dirty=%t", version.Version, version.Dirty)
 	}
 
@@ -129,6 +129,48 @@ func TestMigrateSQLDB(t *testing.T) {
 	}
 	if primaryKeyCount != 1 {
 		t.Fatalf("users table has %d primary key constraints, want 1", primaryKeyCount)
+	}
+
+	var bookmarkColumnCount int64
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM information_schema.columns
+		WHERE table_schema = 'public'
+			AND table_name = 'bookmarks'
+			AND column_name IN ('id', 'code', 'description', 'url', 'user_id', 'created_at', 'updated_at')
+	`).Scan(&bookmarkColumnCount).Error; err != nil {
+		t.Fatalf("inspect bookmark columns: %v", err)
+	}
+	if bookmarkColumnCount != 7 {
+		t.Fatalf("bookmarks table has %d expected columns, want 7", bookmarkColumnCount)
+	}
+
+	var bookmarkConstraintCount int64
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM information_schema.table_constraints
+		WHERE table_schema = 'public'
+			AND table_name = 'bookmarks'
+			AND constraint_name IN ('bookmark_pkey', 'uni_code', 'fk_user_id')
+	`).Scan(&bookmarkConstraintCount).Error; err != nil {
+		t.Fatalf("inspect bookmark constraints: %v", err)
+	}
+	if bookmarkConstraintCount != 3 {
+		t.Fatalf("bookmarks table has %d expected constraints, want 3", bookmarkConstraintCount)
+	}
+
+	var bookmarkIndexCount int64
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM pg_indexes
+		WHERE schemaname = 'public'
+			AND tablename = 'bookmarks'
+			AND indexname = 'idx_bookmarks_user_created_at'
+	`).Scan(&bookmarkIndexCount).Error; err != nil {
+		t.Fatalf("inspect bookmark indexes: %v", err)
+	}
+	if bookmarkIndexCount != 1 {
+		t.Fatalf("bookmarks table has %d expected list indexes, want 1", bookmarkIndexCount)
 	}
 
 	cfg.DBName = originalDBName

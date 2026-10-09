@@ -83,7 +83,7 @@ func TestSqlRepository_CreateUser(t *testing.T) {
 			inputEmail:    "duplicate@example.com",
 			expectError:   true,
 			verifyFunc: func(t *testing.T, db *gorm.DB, user *model.User, err error) {
-				assert.Error(t, err)
+				assert.ErrorIs(t, err, dbutils.ErrDuplicateEmail)
 				assert.Nil(t, user)
 			},
 		},

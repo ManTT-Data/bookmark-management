@@ -44,7 +44,7 @@ func TestBookmarkEndpoints(t *testing.T) {
 
 	created := createBookmark(t, engine, "fixture-token", "Google", "https://google.com")
 	bookmarkID := created["id"].(string)
-	require.Len(t, created["code"].(string), 10)
+	require.Len(t, created["code"].(string), 8)
 
 	listRequest := authorizedRequest(http.MethodGet, "/v1/bookmarks?page=1&limit=1&sort=created_at", "fixture-token", nil)
 	listRecorder := httptest.NewRecorder()

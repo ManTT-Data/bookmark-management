@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	bookmarkCodeLength = 10
+	bookmarkCodeLength = 8
 	maxCodeAttempts    = 5
 	defaultPage        = 1
 	defaultLimit       = 20
